@@ -1,0 +1,20 @@
+{
+  "strava": {
+    "client_id": "YOUR_STRAVA_CLIENT_ID",
+    "client_secret": "YOUR_STRAVA_CLIENT_SECRET",
+    "access_token": "YOUR_STRAVA_ACCESS_TOKEN",
+    "refresh_token": "YOUR_STRAVA_REFRESH_TOKEN",
+    "token_expires_at": 0
+  },
+  "google": {
+    "service_account_json": "service-account.json",
+    "spreadsheet_id": "YOUR_GOOGLE_SPREADSHEET_ID"
+  },
+  "sheet_mapping": {
+    "sheet_name": "Sheet1",
+    "date_column": 2,
+    "distance_column": 6,
+    "pace_column": 11
+  },
+  "units": "km"
+}
