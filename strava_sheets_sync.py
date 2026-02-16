@@ -226,7 +226,60 @@ def parse_activity(activity, units="miles"):
         "pace": pace_str,
         "duration": duration_str,
         "name": activity.get("name", ""),
+        "distance_raw": distance,
+        "moving_time_s": moving_time_s,
     }
+
+
+def combine_same_day(activities_parsed):
+    """
+    Combine multiple activities on the same day into a single entry.
+    Distance is summed, pace is distance-weighted averaged, duration is summed.
+    """
+    from collections import OrderedDict
+
+    grouped = OrderedDict()
+    for act in activities_parsed:
+        grouped.setdefault(act["date"], []).append(act)
+
+    combined = []
+    for date, acts in grouped.items():
+        if len(acts) == 1:
+            combined.append(acts[0])
+            continue
+
+        total_distance_raw = sum(a["distance_raw"] for a in acts)
+        total_time_s = sum(a["moving_time_s"] for a in acts)
+
+        # Distance-weighted pace
+        if total_distance_raw > 0:
+            pace_total_seconds = total_time_s / total_distance_raw
+            pace_min = int(pace_total_seconds // 60)
+            pace_sec = int(pace_total_seconds % 60)
+            pace_str = f"{pace_min}:{pace_sec:02d}"
+        else:
+            pace_str = "N/A"
+
+        # Duration
+        hours = total_time_s // 3600
+        mins = (total_time_s % 3600) // 60
+        secs = total_time_s % 60
+        if hours:
+            duration_str = f"{int(hours)}:{int(mins):02d}:{int(secs):02d}"
+        else:
+            duration_str = f"{int(mins)}:{int(secs):02d}"
+
+        combined.append({
+            "date": date,
+            "distance": round(total_distance_raw, 2),
+            "pace": pace_str,
+            "duration": duration_str,
+            "name": " + ".join(a["name"] for a in acts if a["name"]),
+            "distance_raw": total_distance_raw,
+            "moving_time_s": total_time_s,
+        })
+
+    return combined
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +412,7 @@ def main():
     units = config.get("units", "miles")
     parsed = [parse_activity(a, units=units) for a in activities]
     parsed.sort(key=lambda x: x["date"])
+    parsed = combine_same_day(parsed)
 
     print(f"   Found {len(parsed)} run(s):\n")
     for p in parsed:
